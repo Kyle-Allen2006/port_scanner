@@ -1,44 +1,48 @@
 use tokio::net::TcpStream;
-use tokio::time::{timeout, Duration};
-// use std::net::ToSocketAddrs; commented out for testing purposes
-use std::ops::Range;
 use std::time::Instant;
+use futures::future::join_all;
 
 #[tokio::main]
 async fn main() {
-    let target: &str = "scanme.nmap.org"; // Replace with desired target
-    let port_range: Range<i32> = 1..1024;
-    let total_ports = port_range.len();
+    let target = "scanme.nmap.org";
+    let ports: Vec<u16> = (1..1024).collect();
+    let total_ports = ports.len();
     let start = Instant::now();
 
-    println!("🔍 Scanning {} ports on {}...\n", total_ports, target);
+    println!("Concurrently scanning {} ports on {}...\n", total_ports, target);
 
-    let mut scanned = 0;
+    let tasks: Vec<_> = ports
+        .iter()
+        .map(|&port| {
+            let addr = format!("{}:{}", target, port);
+            tokio::spawn(async move {
+                if TcpStream::connect(&addr).await.is_ok() {
+                    Some(port)
+                } else {
+                    None
+                }
+            })
+        })
+        .collect();
 
-    for port in port_range {
-        let addr = format!("{}:{}", target, port);
-        scanned += 1;
+    let results = join_all(tasks).await;
 
-        // Set a timeout for each connection attempt (e.g., 1 second)
-        match timeout(Duration::from_secs(1), TcpStream::connect(&addr)).await {
-            Ok(Ok(_)) => println!(" Port {} is open", port),
-            _ => {} // Closed, unreachable, or timed out
-        }
-
-        // Show progress every 100 ports
-        if scanned % 100 == 0 || scanned == total_ports {
-            let elapsed = start.elapsed().as_secs_f32();
-            let avg_time_per_port = elapsed / scanned as f32;
-            let estimated_remaining = avg_time_per_port * (total_ports - scanned) as f32;
-            println!(
-                " Progress: {}/{} | ~{:.1}s remaining",
-                scanned,
-                total_ports,
-                estimated_remaining
-            );
+    let mut open_ports = Vec::new();
+    for result in results {
+        if let Ok(Some(port)) = result {
+            open_ports.push(port);
         }
     }
 
-    let total_time = start.elapsed().as_secs_f32();
-    println!("\n✅ Scan complete in {:.2} seconds", total_time);
+    let elapsed = start.elapsed().as_secs_f32();
+    println!("\nScan complete in {:.2} seconds", elapsed);
+
+    if open_ports.is_empty() {
+        println!("No open ports found.");
+    } else {
+        println!("Open ports:");
+        for port in open_ports {
+            println!("  - Port {}", port);
+        }
+    }
 }
