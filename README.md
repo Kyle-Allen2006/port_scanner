@@ -3,7 +3,7 @@
 ⚠️ Disclaimer
 This tool is for educational and legal testing purposes only. Do not use it to scan networks or systems you don’t own or have permission to test.
 
-This is a basic asynchronous port scanner written in **Rust** using [`tokio`](https://crates.io/crates/tokio). This is my first self-project in Rust to better learn the language and was my second attempt at creating a port scanner. This is the 2nd version with added timers and timeouts for no response ports.
+This is a basic asynchronous port scanner written in **Rust** using [`tokio`](https://crates.io/crates/tokio). This is my first self-project in Rust to better learn the language and was my second attempt at creating a port scanner. This is the 3rd version with added scanning concurrency added as well as timers and timeouts for no response ports. 
 
 It scans a range of ports (default: 1 to 1024) on a specified target and displays which ports are open.
 
@@ -28,6 +28,7 @@ It scans a range of ports (default: 1 to 1024) on a specified target and display
 - added **std::net** and **std::time**: Built-in Rust standard libraries
 - Command Line Interface (CLI) – interaction through terminal
 - TCP Networking – scans network ports for open connections
+- Futures - A Rust crate for async programming, enabling efficient concurrent tasks like parallel port scanning.
 
 ---
 
